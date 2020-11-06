@@ -1,0 +1,21 @@
+# math and science https://www.scipy.org/
+numpy
+scipy
+# pandas https://pandas.pydata.org/
+pandas
+#sklearn https://scikit-learn.org/stable/
+sklearn
+# redis https://pypi.org/project/redis/
+redis
+# requests https://github.com/psf/requests
+# http-client (vs aiohttp) https://www.python-httpx.org/async/
+requests
+httpx
+# webAPI framework https://github.com/tiangolo/fastapi
+fastapi
+# ASGI server http://www.uvicorn.org/
+uvicorn
+# async file-access https://github.com/Tinche/aiofiles
+aiofiles
+# asyncio pg-client https://github.com/MagicStack/asyncpg
+asyncpg
