@@ -45,9 +45,9 @@ set schema 'dev';
 
 \set ON_ERROR_STOP 0
 \i :test_file
-\i :test_file.sql
-\i :test_file/:test_filename.sql
-\i :test_file/index.sql
+-- \i :test_file.sql
+-- \i :test_file/:test_filename.sql
+-- \i :test_file/index.sql
 \set ON_ERROR_STOP 1
 
 

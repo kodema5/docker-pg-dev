@@ -28,13 +28,13 @@ set arg2=%2
 call set args=%%args_all:*%1=%%
 
 
-if [%arg1%]==[build] (
+if [%arg1%]==[build-docker] (
     @echo building %PGDEV_IMAGE%
     docker build -t %PGDEV_IMAGE% .
     docker system prune -f
     goto end
 )
-if [%arg1%]==[start] (
+if [%arg1%]==[start-docker] (
     @echo starting %PGDEV_NAME% container
 
     docker run --rm -d ^
@@ -49,7 +49,7 @@ if [%arg1%]==[start] (
         -c cron.database_name=postgres
     goto end
 )
-if [%arg1%]==[stop] (
+if [%arg1%]==[stop-docker] (
     @echo stopping %PGDEV_NAME% container
 
     docker exec -it %PGDEV_NAME% ^
