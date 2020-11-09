@@ -32,9 +32,17 @@ create function web.post(
     body jsonb,                 -- request json body
     headers jsonb default null  -- for future (ex: authentication)
 ) returns jsonb as $$
-    select to_jsonb(web.post(jsonb_populate_record(null::web.input_t, body)))
-        || coalesce(headers, '{}'::jsonb);             -- just combine for now
-$$ language sql;
+begin
+    -- raise exception 'for some error';
+
+    return jsonb_build_object('data',
+        to_jsonb(web.post(jsonb_populate_record(null::web.input_t, body)))
+        || coalesce(headers, '{}'::jsonb));
+
+exception when others then
+    return jsonb_build_object('error', sqlerrm);
+end;
+$$ language plpgsql;
 
 \if :test
 -- "\if :test" indicates if run by dev.sql
