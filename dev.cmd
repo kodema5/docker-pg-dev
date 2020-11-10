@@ -28,13 +28,13 @@ set arg2=%2
 call set args=%%args_all:*%1=%%
 
 
-if [%arg1%]==[build-docker] (
+if [%arg1%]==[build] (
     @echo building %PGDEV_IMAGE%
     docker build -t %PGDEV_IMAGE% .
     docker system prune -f
     goto end
 )
-if [%arg1%]==[start-docker] (
+if [%arg1%]==[start] (
     @echo starting %PGDEV_NAME% container
 
     docker run --rm -d ^
@@ -51,7 +51,7 @@ if [%arg1%]==[start-docker] (
 
     goto end
 )
-if [%arg1%]==[stop-docker] (
+if [%arg1%]==[stop] (
     @echo stopping %PGDEV_NAME% container
 
     docker exec -it %PGDEV_NAME% ^
