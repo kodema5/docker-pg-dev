@@ -19,3 +19,7 @@ uvicorn
 aiofiles
 # asyncio pg-client https://github.com/MagicStack/asyncpg
 asyncpg
+# https://pymongo.readthedocs.io/en/stable/
+pymongo
+# https://dateutil.readthedocs.io/en/stable/
+python-dateutil

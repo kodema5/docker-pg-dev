@@ -45,8 +45,10 @@ if [%arg1%]==[start-docker] (
         --name %PGDEV_NAME% ^
         -e POSTGRES_PASSWORD=%PGDEV_PASSWORD% ^
         %PGDEV_IMAGE% ^
-        -c shared_preload_libraries=pg_cron ^
-        -c cron.database_name=postgres
+        -c shared_preload_libraries=pg_cron,pg_partman_bgw ^
+        -c cron.database_name=postgres ^
+        -c cron.pg_partman_bgw.dbname=postgres
+
     goto end
 )
 if [%arg1%]==[stop-docker] (

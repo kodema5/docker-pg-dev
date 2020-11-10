@@ -5,6 +5,7 @@ RUN apt-get update \
         postgresql-12-pgtap \
         postgresql-12-cron \
         postgresql-12-python3-multicorn \
+        postgresql-12-partman \
         postgresql-plpython3-12 \
         python3-pip
 
