@@ -30,7 +30,7 @@ call set args=%%args_all:*%1=%%
 
 if [%arg1%]==[build] (
     @echo building %PGDEV_IMAGE%
-    docker build -t %PGDEV_IMAGE% .
+    docker build -t %PGDEV_IMAGE% %~dp0
     docker system prune -f
     goto end
 )
@@ -41,7 +41,7 @@ if [%arg1%]==[start] (
         -p %PGDEV_PORT%:5432 ^
         -p %PGDEV_HTTP_PORT%:80 ^
         -v %PGDEV_WORKDIR%:/work ^
-        -v %PGDEV_WORKDIR%/.data:/var/lib/postgresql/data ^
+        -v %PGDEV_WORKDIR%/.data/%PGDEV_IMAGE%:/var/lib/postgresql/data ^
         --name %PGDEV_NAME% ^
         -e POSTGRES_PASSWORD=%PGDEV_PASSWORD% ^
         %PGDEV_IMAGE% ^
