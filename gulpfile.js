@@ -25,7 +25,7 @@ const argv = (() => {
     })
     return arr.slice(n+1)
 })();
-const Argv = yargs(exports.argv).parse()
+const Argv = yargs(argv).parse()
 
 // caller dir, /foo> .../dev  -> '/foo'
 const initCwd = process.env.INIT_CWD
@@ -57,7 +57,6 @@ let usr = process.env.POSTGRES_USER || Argv.pg_user || 'postgres'
 let pwd = process.env.POSTGRES_PASSWORD || Argv.pg_password|| 'rei'
 let port = process.env.PGDEV_PORT || Argv.pg_port|| '5432'
 let httpPort = process.env.PGDEV_HTTP_PORT || Argv.pg_http_port || '8000'
-
 
 exports.docker_build = (cb) => {
     exec(`docker build -t ${dockerImageName} .`)
