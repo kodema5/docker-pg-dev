@@ -23,3 +23,5 @@ asyncpg
 pymongo
 # https://dateutil.readthedocs.io/en/stable/
 python-dateutil
+# https://github.com/djrobstep/migra
+migra[pg]
