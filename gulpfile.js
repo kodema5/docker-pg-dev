@@ -45,18 +45,27 @@ const exec = (s, opt={}) => {
     }, opt, {
         env: Object.assign(process.env, opt.env)
     })
-
-    execSync(packWords(s),o)
+    try {
+        execSync(packWords(s),o)
+    } catch(e) {
+    }
 }
 
 
 
 let dockerImageName = 'pg-dev'
 let pgName = process.env.POSTGRES_NAME || Argv.pg_name || 'pg-dev'
-let usr = process.env.POSTGRES_USER || Argv.pg_user || 'postgres'
-let pwd = process.env.POSTGRES_PASSWORD || Argv.pg_password|| 'rei'
-let port = process.env.PGDEV_PORT || Argv.pg_port|| '5432'
-let httpPort = process.env.PGDEV_HTTP_PORT || Argv.pg_http_port || '8000'
+let pgUser = process.env.POSTGRES_USER || Argv.pg_user || 'postgres'
+let pgPassword = process.env.POSTGRES_PASSWORD || Argv.pg_password || 'rei'
+
+// pg-dev2 maps to 5433 and 8001
+let defaultPortIndex = (() => {
+    let a = pgName.replace('pg-dev','').match(/^\d$/g)
+    return a && (parseInt(a[0]) - 1) || 0
+})()
+
+let pgPort = process.env.PGDEV_PORT || Argv.pg_port|| (5432 + defaultPortIndex)
+let httpPort = process.env.PGDEV_HTTP_PORT || Argv.pg_http_port || (8000 + defaultPortIndex)
 
 exports.docker_build = (cb) => {
     exec(`docker build -t ${dockerImageName} .`)
@@ -70,16 +79,16 @@ exports.docker_start = (cb) => {
 
     exec(`
     docker run --rm -d
-        -p ${port}:5432
+        -p ${pgPort}:5432
         -p ${httpPort}:80
         -v ${cd}:/work
         -v ${dd}:/var/lib/postgresql/data
         --name ${pgName}
-        -e POSTGRES_PASSWORD=${pwd}
+        -e POSTGRES_PASSWORD=${pgPassword}
         ${dockerImageName}
         -c shared_preload_libraries=pg_cron,pg_partman_bgw
-        -c cron.database_name=${usr}
-        -c cron.pg_partman_bgw.dbname=${usr}
+        -c cron.database_name=${pgUser}
+        -c cron.pg_partman_bgw.dbname=${pgUser}
     `)
     cb()
 }
@@ -105,7 +114,7 @@ exports.bash = (cb) => {
 // --to postgresql://postgres:rei@0.0.0.0:5432/postgres
 exports.migra = (cb) => {
     let fromDb = Argv.from
-    let toDb = Argv.to || `postgresql://${usr}:${pwd}@0.0.0.0:${port}/postgres`
+    let toDb = Argv.to || `postgresql://${pgUser}:${pgPassword}@0.0.0.0:${pgPort}/${pgUser}`
     try { exec(`docker exec -it ${pgName} migra --unsafe ${fromDb} ${toDb}`) } catch(e) {}
     cb()
 }
@@ -137,7 +146,7 @@ exports.multicorn = (cb) => {
 
 
 exports.psql = (cb) => {
-    exec(`docker exec -it ${pgName} psql -U ${usr} -d ${usr} ${argv}`)
+    exec(`docker exec -it ${pgName} psql -U ${pgUser} -d ${pgUser} ${argv}`)
     cb()
 }
 
