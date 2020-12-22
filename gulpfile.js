@@ -189,10 +189,10 @@ exports.watch = (cb) => {
     let isDir = s.isDirectory()
     let d = isDir ? file : path.dirname(p)
 
-    let wd = path.relative(initCwd, d)
-        .split(path.sep)
-        .join('/')
-    watch(['*.sql', '*.py'], {
+    // let wd = path.relative(initCwd, d)
+    //     .split(path.sep)
+    //     .join('/')
+    watch(['./**/*.sql', './**/*.py'], {
         cwd:d
     }, series('test', 'multicorn'))
     cb()
