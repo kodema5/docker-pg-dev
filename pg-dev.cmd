@@ -1,2 +1,2 @@
 @echo off
-gulp -f %~dp0\gulpfile.js %*
+npx gulp -f %~dp0\gulpfile.js %*

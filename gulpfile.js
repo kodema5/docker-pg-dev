@@ -128,7 +128,9 @@ exports.multicorn = (cb) => {
     let f = isDir ? 'setup.py' : path.basename(p)
     let d = isDir ? file : path.dirname(p)
 
-    if (!fs.existsSync(path.resolve(initCwd, d, f))) {
+    let notFound = !fs.existsSync(path.resolve(initCwd, d, f))
+        || path.extname(f)!=='.py'
+    if (notFound) {
         cb()
         return
     }
