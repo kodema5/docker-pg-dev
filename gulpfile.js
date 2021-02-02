@@ -180,7 +180,7 @@ exports.test = (cb) => {
 }
 
 exports.uvicorn = (cb) => {
-    exec(`docker exec -it -w / ${pgName} uvicorn dev:app --host=0.0.0.0 --port=${httpPort}`)
+    exec(`docker exec -it -w / ${pgName} uvicorn dev:app --host=0.0.0.0 --port=80`)
     cb()
 }
 

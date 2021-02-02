@@ -2,10 +2,12 @@
 
 # use vscode-restclient for testing
 
+# psql -U postgres -f /work/example.sql
+# uvicorn dev:app --host=0.0.0.0 --port=80
+
 ###
 
-
-POST http://localhost:5000/api/web.post HTTP/1.1
+POST http://localhost:8000/api/web.post HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer (jwt-token)
 
@@ -13,3 +15,34 @@ Authorization: Bearer (jwt-token)
     "a":1232
 }
 
+
+###
+
+POST http://localhost:8000/httpx HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer (jwt-token)
+
+{
+    "url": "https://httpbin.org/post",
+    "method": "POST",
+    "json": {"foo": [1,2,3]},
+
+    "callback": "select $1::jsonb || coalesce($2::jsonb, '{}'::jsonb)",
+    "context": { "abb": 123 }
+}
+
+
+###
+
+POST http://localhost:8000/httpx HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer (jwt-token)
+
+{
+    "url": "https://httpbin.org/post",
+    "method": "POST",
+    "json": {"foo": [1,2,3]},
+
+    "callback": "select web.post($1::jsonb, $2::jsonb) as output",
+    "context": { "abb": 123 }
+}
