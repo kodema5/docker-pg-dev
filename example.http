@@ -39,10 +39,19 @@ Content-Type: application/json
 Authorization: Bearer (jwt-token)
 
 {
-    "url": "https://httpbin.org/post",
-    "method": "POST",
-    "json": {"foo": [1,2,3]},
+        "url": "https://httpbin.org/post",
+        "method": "POST",
 
-    "callback": "select web.post($1::jsonb, $2::jsonb) as output",
-    "context": { "abb": 123 }
+        "json": { "foo": [1,2,3]},
+        "files": { "a-file": "example.html" },
+        "headers": { "X-Custom": "from-request"},
+        "params": {"a": "b"},
+        "data": {"c": "d"},
+        "timeout": 1,
+
+        "writeTo": "a.txt",
+
+        "callback": "select $1::jsonb || coalesce($2::jsonb, '{}'::jsonb)",
+        "context2": { "a": 123 },
+        "argv": [["context"], ["json", "error"]]
 }

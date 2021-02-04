@@ -3,6 +3,7 @@
 
 import asyncio
 import asyncpg
+import aiofiles
 import os
 import json
 import httpx
@@ -64,11 +65,27 @@ async def exec_func(fn:str, req:Request):
 #
 @app.post('/httpx')
 async def exec_func(req:Request):
+    pool = items['pool']
     p = await req.json()
 
     if not ('url' in p):
         return
 
+    # load files to load
+    #
+    #
+    files = p.get('files', None)
+    if files:
+        for k in files.keys():
+            fn = files.get(k)
+            async with aiofiles.open(fn, mode='r') as f:
+                r = await f.read()
+                files[k] = r
+
+
+    # build request
+    #
+    #
     r = httpx.Request(
         p.get('method', 'POST'),
         p['url'],
@@ -76,16 +93,75 @@ async def exec_func(req:Request):
         data = p.get('data', None),
         json = p.get('json', None),
         headers = p.get('headers', None),
-        cookies = p.get('cookies', None)
+        cookies = p.get('cookies', None),
+        files = files
     )
 
-    async with httpx.AsyncClient() as client:
-        res = await client.send(r)
+    # call ajax
+    #
+    #
+    success = False
+    async with httpx.AsyncClient(
+        timeout = httpx.Timeout(p.get('timeout', 5.0))
+    ) as client:
+        try:
+            res = await client.send(r)
+            success = True
+        except Exception as e:
+            res = {'error': str(e) }
 
-    if not ('callback' in p):
+
+    # write-to useful if need to build data
+    #
+    #
+    writeTo = p.get('writeTo', None)
+    if success and writeTo:
+        async with aiofiles.open(writeTo, 'wb') as f:
+            await f.write(res.content)
+            await f.flush()
+
+
+    callback = p.get('callback', None)
+    if not callback:
         return
 
-    pool = items['pool']
+    # build arguments
+    #
+    #
+    kwargs = [callback]
+    argv = p.get('argv', None)
+    if argv:
+        for arg in argv:
+            o = dict()
+
+            for v in arg:
+                if v == "context":
+                    o.update(p.get('context', dict()))
+
+                elif success and v == "headers":
+                    o.update(res.headers)
+
+                elif success and v == "cookies":
+                    o.update(res.cookies)
+
+                elif success and v == "json":
+                    try:
+                        o.update(res.json())
+                    except Exception as e:
+                        o.update({'error': 'Failed to parse json'})
+
+                elif success and v == "text":
+                    o.update({"text": res.text})
+
+                elif not success and v == "error":
+                    o.update({"error": res.get('error')})
+
+            kwargs.append(o)
+
+
+    # send callback to pg
+    #
+    #
     async with pool.acquire() as conn:
 
         await conn.set_type_codec(
@@ -95,26 +171,9 @@ async def exec_func(req:Request):
             schema='pg_catalog'
         )
 
-        t = p.get('type', 'json')
-        if t == 'json':
-            a = res.json()
-        else:
-            a = res.text
-
-        if ('context' in p):
-            x = await conn.fetchval(
-                p.get('callback'),
-                a,
-                p.get('context', None)
-            )
-        else:
-            x = await conn.fetchval(
-                p.get('callback'),
-                a
-            )
+        x = await conn.fetchval(*kwargs)
 
         return x
-
 
 # serve / static file
 #
