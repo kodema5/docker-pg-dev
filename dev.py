@@ -104,7 +104,6 @@ async def http_post(url, data):
             await client.send(r)
         except Exception as e:
             print(e)
-            pass
 
 
 # execute db-call
