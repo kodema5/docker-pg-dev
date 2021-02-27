@@ -1,0 +1,16 @@
+###
+# simple httpx
+
+POST http://localhost:8000/httpx HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer (jwt-token)
+
+{
+    "url": "https://httpbin.org/post",
+    "method": "POST",
+    "json": {"foo": [1,2,3]},
+    "type": "json"
+}
+
+###
+GET http://localhost:8000/example.html HTTP/1.1
