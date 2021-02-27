@@ -1,10 +1,35 @@
 
--- > "dev watch /example.sql"
--- > "dev web"
 -- see example.http for call
 
 drop schema if exists web cascade;
 create schema web;
+
+------------------------------------------------------------
+
+create table web.echo_log(
+    ts timestamp with time zone default current_timestamp,
+    val jsonb
+);
+
+create function web.echo(i jsonb) returns jsonb as $$
+declare
+    o jsonb = (i || '{"web.echo1":"hello"}'::jsonb) - 'callback';
+begin
+    insert into web.echo_log (val) values (o);
+    return o;
+end;
+$$ language plpgsql;
+
+create function web.echo2(i jsonb) returns jsonb as $$
+declare
+    o jsonb = (i || '{"web.echo2":"hello"}'::jsonb) - 'callback';
+begin
+    insert into web.echo_log (val) values (o);
+    return o;
+end;
+$$ language plpgsql;
+
+------------------------------------------------------------
 
 create type web.input_t as (
     a int

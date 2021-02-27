@@ -11,6 +11,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 from starlette.requests import Request
+from starlette.responses import JSONResponse
+from starlette.background import BackgroundTask
+from urllib import parse
 
 app = FastAPI()
 app.add_middleware(
@@ -37,13 +40,77 @@ async def startup_event():
 async def shutdown_event():
     items['pool'].terminate()
 
+
+@app.post('/echo')
+async def exec_func(req:Request):
+    return {
+        **dict(req.headers),
+        **dict(req.query_params),
+        **(await req.json())
+    }
+
 # /api/{fn} calls {fn}(jsonb, jsonb) returns jsonb
-#
 #
 @app.post('/api/{fn}')
 async def exec_func(fn:str, req:Request):
-    pool = items['pool']
     pg_fn = '.'.join(map(json.dumps, fn.split('.')))
+    data = {
+        **dict(req.headers),
+        **dict(req.query_params),
+        **(await req.json())
+    }
+
+    if not 'callback' in data:
+        return await db_exec(pg_fn, data)
+
+    cb = data["callback"]
+    task = BackgroundTask(db_exec_callback, pg_fn, data, cb)
+    msg = {'status': 'routing to ' + cb}
+    return JSONResponse(msg, background=task)
+
+
+# execute db with callback
+#
+async def db_exec_callback(pg_fn, data, callback):
+    output = await db_exec(pg_fn, data)
+    await do_callback(callback, output)
+
+
+# process callback=url of data
+#
+async def do_callback(url, data):
+    parsed = parse.urlsplit(url)
+    sch = parsed.scheme
+
+    if sch == 'api':
+        await db_exec(parsed.netloc, {
+            **dict(parse.parse_qsl(parsed.query)),
+            **data
+        })
+
+    if sch == 'http' or sch == 'https':
+        await http_post(url, data)
+
+# post data to url
+#
+async def http_post(url, data):
+    r = httpx.Request(
+        'POST',
+        url,
+        json = data
+    )
+    async with httpx.AsyncClient() as client:
+        try:
+            await client.send(r)
+        except Exception as e:
+            print(e)
+            pass
+
+
+# execute db-call
+#
+async def db_exec(pg_fn, data):
+    pool = items['pool']
 
     async with pool.acquire() as conn:
 
@@ -55,10 +122,10 @@ async def exec_func(fn:str, req:Request):
         )
 
         return await conn.fetchval(
-            f"select {pg_fn}($1::jsonb, $2::jsonb) as output",
-            await req.json(),
-            dict(req.headers)
+            f"select {pg_fn}($1::jsonb) as output",
+            data
         )
+
 
 # http-proxy to export http-tasks outside
 #

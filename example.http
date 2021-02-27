@@ -5,6 +5,54 @@
 # psql -U postgres -f /work/example.sql
 # uvicorn dev:app --host=0.0.0.0 --port=80
 
+####
+# echo request
+#
+POST http://localhost:8000/echo?a=1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer (jwt-token)
+
+{
+    "b":2
+}
+
+
+####
+# echo request from web.echo
+#
+POST http://localhost:8000/api/web.echo?a=1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer (jwt-token)
+
+{
+    "b":3
+}
+
+###
+# echo with callback to api
+#
+POST http://localhost:8000/api/web.echo?a=1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer (jwt-token)
+
+{
+    "b":4,
+    "callback": "api://web.echo2?echo2=1"
+}
+
+
+###
+# echo with callback to api
+#
+POST http://localhost:8000/api/web.echo?a=1 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer (jwt-token)
+
+{
+    "b":5,
+    "callback": "http://0.0.0.0:80/api/web.echo2?echo2=11111"
+}
+
 ###
 
 POST http://localhost:8000/api/web.post HTTP/1.1
