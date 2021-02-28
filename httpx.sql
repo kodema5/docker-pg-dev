@@ -66,7 +66,8 @@ create function httpx_sync (
     data jsonb default null,
     json jsonb default null,
     headers jsonb default null,
-    cookies jsonb default null
+    cookies jsonb default null,
+    timeout int default 5 -- set to null to disable
 )
 returns text
 as $$
@@ -81,7 +82,8 @@ as $$
             json = loads(json) if json else None,
             data = loads(data) if data else None,
             headers = loads(headers) if headers else None,
-            cookies = loads(cookies) if cookies else None
+            cookies = loads(cookies) if cookies else None,
+            timeout = timeout
         )
 
         return r.text
