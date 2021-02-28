@@ -13,6 +13,7 @@ RUN apt-get update \
 COPY requirements.txt /requirements.txt
 RUN pip3 install -r /requirements.txt
 
+COPY httpx.sql /httpx.sql
 COPY dev.sql /dev.sql
 COPY dev.py /dev.py
 
