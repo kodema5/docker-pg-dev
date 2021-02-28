@@ -56,6 +56,43 @@ as $$
 $$ language plpython3u;
 
 
+-- httpx_sync locks process (use sparingly)
+--
+create function httpx_sync (
+    url text,
+    method text default 'POST',
+
+    params jsonb default null,
+    data jsonb default null,
+    json jsonb default null,
+    headers jsonb default null,
+    cookies jsonb default null
+)
+returns text
+as $$
+    from httpx import request
+    from json import loads, dumps
+
+    try:
+        r = request(
+            method,
+            url,
+            params = loads(params) if params else None,
+            json = loads(json) if json else None,
+            data = loads(data) if data else None,
+            headers = loads(headers) if headers else None,
+            cookies = loads(cookies) if cookies else None
+        )
+
+        return r.text
+
+    except Exception as e:
+        plpy.warning(str(e))
+        return None
+$$ language plpython3u;
+
+
+
 \if :test
 
     create table tests.httpx_log (
@@ -182,6 +219,23 @@ $$ language plpython3u;
         call tests.httpx_log_show_values('test_httpx_uploads');
 
         return next ok(n=1, 'can call http uploads');
+    end;
+    $$ language plpgsql;
+
+    create function tests.test_httpx_sync () returns setof text as $$
+    declare
+        a jsonb;
+    begin
+        a = httpx_sync(
+            url := 'http://0.0.0.0:80/echo?a=1',
+            json := jsonb_build_object(
+                'b', 2
+            )
+        )::jsonb;
+
+        -- raise warning '----- httpx_sync %', a;
+
+        return next ok(a->>'a' = '1' and a->>'b' = '2', 'can sync http-call');
     end;
     $$ language plpgsql;
 
