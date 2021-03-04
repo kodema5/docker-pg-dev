@@ -41,6 +41,12 @@ async def shutdown_event():
     items['pool'].terminate()
 
 # -----------------------------------------------------------------------------
+# serve / static file
+#
+app.mount("/public", StaticFiles(directory="/work"), name="root")
+
+
+# -----------------------------------------------------------------------------
 # /echo parameters for testing
 #
 @app.post('/echo')
@@ -51,86 +57,19 @@ async def echo_api(req:Request):
         }),
         **dict(req.headers),
         **dict(req.query_params),
-        **(await req.json())
+        **(await get_req_json(req))
     }
 
-# -----------------------------------------------------------------------------
-# /api/{fn} calls {fn}(jsonb, jsonb) returns jsonb
-#
-@app.post('/api/{fn}')
-async def db_exec_api(fn:str, req:Request):
-    pg_fn = '.'.join(map(json.dumps, fn.split('.')))
-    data = {
-        **({
-            'origin': req.client.host if req.client else None
-        }),
-        **dict(req.headers),
-        **dict(req.query_params),
-        **(await req.json())
-    }
-
-    if not 'callback' in data:
-        return await db_exec(pg_fn, data)
-
-    cb = data["callback"]
-    task = BackgroundTask(db_exec_callback, pg_fn, data, cb)
-    return JSONResponse(None, background=task)
-
-# execute db-call
-#
-async def db_exec(pg_fn, data):
-    pool = items['pool']
-
-    async with pool.acquire() as conn:
-
-        await conn.set_type_codec(
-            'jsonb',
-            encoder=json.dumps,
-            decoder=json.loads,
-            schema='pg_catalog'
-        )
-
-        return await conn.fetchval(
-            f"select {pg_fn}($1::jsonb) as output",
-            data
-        )
-
-
-# execute db with callback
-#
-async def db_exec_callback(pg_fn, data, callback):
-    output = await db_exec(pg_fn, data)
-    await do_callback(callback, output)
-
-
-# -----------------------------------------------------------------------------
-# process callback=url of data
-#
-async def do_callback(url, data):
-    parsed = parse.urlsplit(url)
-    sch = parsed.scheme
-
-    if sch == 'api':
-        await db_exec(parsed.netloc, {
-            **dict(parse.parse_qsl(parsed.query)),
-            **data
-        })
-
-    elif sch == 'http' or sch == 'https':
-        r = httpx.Request('POST', url, json=data)
-
-        async with httpx.AsyncClient() as client:
-            try:
-                await client.send(r)
-            except Exception as e:
-                print(e)
-
-
+async def get_req_json(req:Request):
+    try:
+        return await req.json()
+    except:
+        return {}
 
 # -----------------------------------------------------------------------------
 # httpx calls httpx from pg
 #
-@app.post('/httpx')
+@app.post('/_/httpx')
 async def httpx_exec_api(req:Request):
     p = await req.json()
 
@@ -220,11 +159,79 @@ async def httpx_exec(p):
     #
     await do_callback(p.get('callback',None), data)
 
+# -----------------------------------------------------------------------------
+# /schema/{fn} calls {schema.fn}(jsonb) returns jsonb
+#
+@app.post('/{schema}/{fn}')
+async def db_exec_api(schema:str, fn:str, req:Request):
+    pg_fn = '.'.join(map(json.dumps, [schema, fn]))
+    data = {
+        **({
+            'origin': req.client.host if req.client else None
+        }),
+        **dict(req.headers),
+        **dict(req.query_params),
+        **(await get_req_json(req))
+    }
+
+    if not 'callback' in data:
+        return await db_exec(pg_fn, data)
+
+    cb = data["callback"]
+    task = BackgroundTask(db_exec_callback, pg_fn, data, cb)
+    return JSONResponse(None, background=task)
+
+
+# execute db-call
+#
+async def db_exec(pg_fn, data):
+    pool = items['pool']
+
+    async with pool.acquire() as conn:
+
+        await conn.set_type_codec(
+            'jsonb',
+            encoder=json.dumps,
+            decoder=json.loads,
+            schema='pg_catalog'
+        )
+
+        return await conn.fetchval(
+            f"select {pg_fn}($1::jsonb) as output",
+            data
+        )
+
+
+# execute db with callback
+#
+async def db_exec_callback(pg_fn, data, callback):
+    output = await db_exec(pg_fn, data)
+    await do_callback(callback, output)
+
 
 # -----------------------------------------------------------------------------
-# serve / static file
+# process callback=url of data
 #
-app.mount("/", StaticFiles(directory="/work"), name="root")
+async def do_callback(url, data):
+    parsed = parse.urlsplit(url)
+    sch = parsed.scheme
+
+    if sch == 'local' or sch == '':
+        fn = '.'.join(map(json.dumps, [parsed.netloc, parsed.path.split('/')[1]]))
+        await db_exec(fn, {
+            **dict(parse.parse_qsl(parsed.query)),
+            **data
+        })
+
+    elif sch == 'http' or sch == 'https':
+        r = httpx.Request('POST', url, json=data)
+
+        async with httpx.AsyncClient() as client:
+            try:
+                await client.send(r)
+            except Exception as e:
+                print(e)
+
 
 
 # -----------------------------------------------------------------------------

@@ -22,7 +22,8 @@ create procedure httpx (
     cookies jsonb default null,
     files jsonb default null,
 
-    downloads text default null
+    downloads text default null,
+    httpx_url text default 'http://0.0.0.0:80/_/httpx'
 )
 as $$
     from httpx import request
@@ -47,7 +48,7 @@ as $$
     try:
         r = request(
             'POST',
-            'http://0.0.0.0:80/httpx',
+            httpx_url,
             json = p,
         )
     except:
@@ -129,10 +130,10 @@ $$ language plpython3u;
         n int;
         v jsonb;
     begin
-        call httpx(
+        call dev.httpx(
             url := 'https://httpbin.org/post',
             json := jsonb_build_object('foo', array[1,2,3]::int[]),
-            callback:= 'api://tests.httpx_callback?from=test_httpx_simple'
+            callback:= '//tests/httpx_callback?from=test_httpx_simple'
         );
 
         perform pg_sleep(1);
@@ -152,11 +153,11 @@ $$ language plpython3u;
         v jsonb;
         r record;
     begin
-        call httpx(
-            url := 'http://0.0.0.0:80/example.html',
+        call dev.httpx(
+            url := 'http://0.0.0.0:80/public/example.html',
             method := 'GET',
             type := 'text',
-            callback:= 'api://tests.httpx_callback?from=test_httpx_get_file'
+            callback:= '//tests/httpx_callback?from=test_httpx_get_file'
         );
 
         perform pg_sleep(1);
@@ -178,12 +179,12 @@ $$ language plpython3u;
         v jsonb;
         r record;
     begin
-        call httpx(
-            url := 'http://0.0.0.0:80/example.html',
+        call dev.httpx(
+            url := 'http://0.0.0.0:80/public/example.html',
             method := 'GET',
             downloads := 'a.html',
             type := 'text',
-            callback:= 'api://tests.httpx_callback?from=test_httpx_downloads'
+            callback:= '//tests/httpx_callback?from=test_httpx_downloads'
         );
 
         perform pg_sleep(1);
@@ -203,12 +204,12 @@ $$ language plpython3u;
         n int;
         v jsonb;
     begin
-        call httpx(
+        call dev.httpx(
             url := 'https://httpbin.org/post',
             files := jsonb_build_object(
                 'a-file', 'example.html'
             ),
-            callback:= 'api://tests.httpx_callback?from=test_httpx_uploads'
+            callback:= '//tests/httpx_callback?from=test_httpx_uploads'
         );
 
         perform pg_sleep(1);

@@ -36,3 +36,8 @@ begin
 end;
 $$ language plpgsql;
 
+
+create function example.logs(_ jsonb) returns jsonb as $$
+    select jsonb_agg(to_jsonb(a))
+    from example.example_log a
+$$ language sql;

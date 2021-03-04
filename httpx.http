@@ -1,7 +1,7 @@
 ###
 # simple httpx
 
-POST http://localhost:8000/httpx HTTP/1.1
+POST http://localhost:8000/_httpx HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer (jwt-token)
 
@@ -13,4 +13,4 @@ Authorization: Bearer (jwt-token)
 }
 
 ###
-GET http://localhost:8000/example.html HTTP/1.1
+GET http://localhost:8000/public/example.html HTTP/1.1
